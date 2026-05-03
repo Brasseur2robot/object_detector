@@ -1,0 +1,15 @@
+object_detector:
+  ros__parameters:
+    front_angle_range: 35.0
+    min_distance: 0.1
+    max_distance: 0.5
+    cluster_tolerance: 0.1
+    expected_object_width: 0.1
+    width_tolerance: 0.05
+    debug: True
+
+uart_sender:
+  ros__parameters:
+    port: "/dev/serial0"
+    baudrate: 115200
+    debug: True
