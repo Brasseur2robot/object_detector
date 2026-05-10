@@ -59,12 +59,12 @@ class UARTSender(Node):
         self.port = self.get_parameter("port").value
 
         try:
-            self.serial = serial.Serial(
+            self.ser = serial.Serial(
                 port=self.port,
                 baudrate=self.baudrate,
                 timeout=1,
             )
-            self.get_logger().info(f"UART initialized on port {self.port}")
+            self.get_logger().info(f"UART initialized on port {self.port} and {self.baudrate} baudrate")
         except Exception as e:
             self.get_logger().error(f"Failed to initialize UART: {e}")
             return
@@ -120,32 +120,35 @@ class UARTSender(Node):
 
         if self.debug:
             self.get_logger().info(
-                f"uart_reader function started with uart_running value: {self.uart_running}"
+                    f"uart_reader function started with uart_running value: {self.uart_running}, and baudrate: {self.baudrate}"
             )
 
         if self.uart_running:
-            data = self.serial.readline().decode("utf-8").strip()
+            while True:
 
-            if self.debug:
-                self.get_logger().info(f"Data coming from uart: {data}")
+                data = self.ser.readline().decode("utf-8").strip()
 
-            if not data == "1;42;42" or not data == "2;42;42":
-                self.get_logger().error("Wrong data coming from uart")
-                return
+                if self.debug:
+                    self.get_logger().info(f"Data coming from uart: {data}, {type(data)}")
 
-            id = int(data[0])
+                if data != "1;42;42" and data != "2;42;42":
+                    self.get_logger().error("Wrong data coming from uart")
+                    return
 
-            if id == 1:
-                self.uart_sender(id)
+                id = int(data[0])
+                data = ""
 
-            elif id == 2:
-                with self.lock:
-                    distance_mm = self.distance_mm
-                    angle_mm = self.angle_deg
-                    self.uart_sender(id, distance_mm, angle_mm)
+                if id == 1:
+                    self.uart_sender(id)
 
-            else:
-                self.get_logger().error(f"Wrong id. Got: {id}, expecting 1 or 2")
+                elif id == 2:
+                    with self.lock:
+                        distance_mm = self.distance_mm
+                        angle_mm = self.angle_deg
+                        self.uart_sender(id, distance_mm, angle_mm)
+
+                else:
+                    self.get_logger().error(f"Wrong id. Got: {id}, expecting 1 or 2")
 
     def uart_sender(self, id: int = 0, distance_mm: int = 0, angle_deg: int = 0):
         """Send a ping or the distance and angle using UART link
@@ -162,12 +165,12 @@ class UARTSender(Node):
         elif id == 1:
             message = f"{id};42;42\n"
             self.get_logger().info(f"The following message will be send: {message}")
-            self.serial.write(message.encode("utf-8"))
+            self.ser.write(message.encode("utf-8"))
 
         elif id == 2:
             message = f"{id};{distance_mm};{angle_deg}\n"
             self.get_logger().info(f"The following message will be send: {message}")
-            self.serial.write(message.encode("utf-8"))
+            self.ser.write(message.encode("utf-8"))
 
     def check_timeout(self):
         """After a short time (no more detected object), reset the distance_mm and angle_deg to default value"""
@@ -185,7 +188,7 @@ class UARTSender(Node):
         self.uart_running = False
         self.uart_thread.join()
 
-        self.serial.close()
+        self.ser.close()
 
         super().destroy_node()
 
