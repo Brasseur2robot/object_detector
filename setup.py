@@ -21,7 +21,7 @@ setup(
     ],
     zip_safe=True,
     maintainer='Brasseur2robot',
-    maintainer_email='',
+    maintainer_email='brasseur@brasseur.beer',
     description='ROS2 package to detect object using LDROBOT Lidar',
     license='TODO: License declaration',
     extras_require={

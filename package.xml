@@ -4,7 +4,7 @@
   <name>object_detector</name>
   <version>1.0.0</version>
   <description>ROS2 package to detect object using LDROBOT Lidar</description>
-  <maintainer email="">Brasseur2robot</maintainer>
+  <maintainer email="brasseur@brasseur.beer">Brasseur2robot</maintainer>
   <license>TODO: License declaration</license>
 
   <depend>rclpy</depend>
