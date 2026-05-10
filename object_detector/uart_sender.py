@@ -118,6 +118,11 @@ class UARTSender(Node):
     def uart_reader(self):
         """Read message coming from the UART and immediatly send a response depending of the id"""
 
+        if self.debug:
+            self.get_logger().info(
+                f"uart_reader function started with uart_running value: {self.uart_running}"
+            )
+
         if self.uart_running:
             data = self.serial.readline().decode("utf-8").strip()
 
