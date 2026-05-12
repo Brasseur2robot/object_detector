@@ -6,7 +6,8 @@ object_detector:
     cluster_tolerance: 0.1
     expected_object_width: 0.1
     width_tolerance: 0.05
-    debug: False
+    normalization: False
+    debug: True
 
 uart_sender:
   ros__parameters:

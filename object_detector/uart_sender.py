@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import threading
 import time
 
@@ -24,8 +26,13 @@ Finally check if port exist:
     ls -l /dev/serial0
 
 If `Permission denied` error:
-    Add user to the dialout group
+    Add user to the dialout and/or tty group
     chmod 777 /dev/serial0
+
+    Try:
+        sudo systemctl disable serial-getty@ttyAMA0.service
+        sudo systemctl mask serial-getty@ttyAMA0.service
+        reboot
 """
 
 

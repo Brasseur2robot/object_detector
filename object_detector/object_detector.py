@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
 import math
-import toml
-import rclpy
 
+import rclpy
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
@@ -14,9 +13,11 @@ from visualization_msgs.msg import Marker, MarkerArray
 class ObjectDetector(Node):
     def __init__(self):
         super().__init__("object_detector")
-        
+
         # Node configuration
-        self.declare_parameter("front_angle_range", 35.0)  # Check ±35° in front
+        self.declare_parameter(
+            "front_angle_range", 35.0
+        )  # Check ±35° in front: [-35°; 35°] scan range
         self.declare_parameter("min_distance", 0.1)  # Minimum valid distance (m)
         self.declare_parameter("max_distance", 1.0)  # Maximum detection range (m)
         self.declare_parameter(
@@ -26,6 +27,9 @@ class ObjectDetector(Node):
             "expected_object_width", 0.1
         )  # Expected object width (m)
         self.declare_parameter("width_tolerance", 0.05)  # ±tolerance for width matching
+        self.declare_parameter(
+            "normalization", False
+        )  # Set to True to get a [0°; 2*front_angle°] scan range
         self.declare_parameter("debug", False)
 
         self.front_angle = self.get_parameter("front_angle_range").value
@@ -34,6 +38,7 @@ class ObjectDetector(Node):
         self.cluster_tol = self.get_parameter("cluster_tolerance").value
         self.expected_width = self.get_parameter("expected_object_width").value
         self.width_tol = self.get_parameter("width_tolerance").value
+        self.normalization = self.get_parameter("normalization").value
         self.debug = self.get_parameter("debug").value
 
         # Subscribe to lidar scan from ldlidar_stl_ros2 package
@@ -52,14 +57,14 @@ class ObjectDetector(Node):
 
         self.get_logger().info("object Detector started!")
         self.get_logger().info(
-            f"Looking for object {self.expected_width}m wide in front in a [0; {2 * self.front_angle}]° range"
+            f"Looking for object {self.expected_width}m wide in front in a [{-self.front_angle + (self.front_angle if self.normalization else 0)};{self.front_angle + (self.front_angle if self.normalization else 0)}]° range"
         )
 
-    def scan_callback(self, msg):
-        """
+    def scan_callback(self, msg: LaserScan):
+        """Core of the program. Publish the marker_array of detected object and the data for the uart interface
 
         Args:
-            msg (std_msgs.msg.LaserScan): [TODO:description]
+            msg: incoming data from the lidar
         """
 
         # Get frame_id from laser scan for proper visualization
@@ -118,15 +123,18 @@ class ObjectDetector(Node):
                 if self.debug:
                     self.get_logger().info(
                         f"Object DETECTED! Distance: {distance:.2f}m, "
-                        f"Width: {width:.2f}m, Angle: {(angle + self.front_angle):.1f}°"
+                        f"Width: {width:.2f}m, Angle: {angle + (self.front_angle if self.normalization else 0):.1f}°"
                     )
 
                 # If an object is detected we send the distance and angle of the cluster to the UART sender
                 msg = UInt16MultiArray()
 
                 # Distance is formatted to be an int that represent millimeter
-                # Angle is formatted to be an int that represent a degree in [0; 2*self.front_angle] range
-                msg.data = [int(distance * 1000), int(angle + self.front_angle)]
+                # Angle is formatted to be an int that represent a degree in [-angle + (self.front_angle if self.normalization else 0); angle + (self.front_angle if self.normalization else 0)] range
+                msg.data = [
+                    int(distance * 1000),
+                    int(angle + (self.front_angle if self.normalization else 0)),
+                ]
                 self.uart_data_pub.publish(msg)
 
             # Create marker for this cluster
