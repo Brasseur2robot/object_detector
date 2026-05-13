@@ -6,7 +6,7 @@ import time
 import rclpy
 import serial
 from rclpy.node import Node
-from std_msgs.msg import UInt16MultiArray
+from std_msgs.msg import Int16MultiArray
 
 """
 For the raspbi config (see https://www.pyserial.com/docs/raspberry-pi):
@@ -71,7 +71,9 @@ class UARTSender(Node):
                 baudrate=self.baudrate,
                 timeout=1,
             )
-            self.get_logger().info(f"UART initialized on port {self.port} and {self.baudrate} baudrate")
+            self.get_logger().info(
+                f"UART initialized on port {self.port} and {self.baudrate} baudrate"
+            )
         except Exception as e:
             self.get_logger().error(f"Failed to initialize UART: {e}")
             return
@@ -95,16 +97,16 @@ class UARTSender(Node):
 
         # Subscribe to the uart_data from object_detector.py
         self.subscription = self.create_subscription(
-            UInt16MultiArray, "/uart_data", self.data_callback, 10
+            Int16MultiArray, "/uart_data", self.data_callback, 10
         )
 
         self.get_logger().info("UART Sender ready!")
 
-    def data_callback(self, msg):
+    def data_callback(self, msg: Int16MultiArray):
         """Extract the value from the msg send by the uart_data topic when data are received
 
         Args:
-            msg (std_msgs.msg.UInt16MultiArray): A specific message with the distance in millimeter and angle in degree inside array of data
+            msg: A specific message with the distance in millimeter and angle in degree inside array of data
         """
 
         # Extract values from array
@@ -127,16 +129,17 @@ class UARTSender(Node):
 
         if self.debug:
             self.get_logger().info(
-                    f"uart_reader function started with uart_running value: {self.uart_running}, and baudrate: {self.baudrate}"
+                f"uart_reader function started with uart_running value: {self.uart_running}, and baudrate: {self.baudrate}"
             )
 
         if self.uart_running:
             while True:
-
                 data = self.ser.readline().decode("utf-8").strip()
 
                 if self.debug:
-                    self.get_logger().info(f"Data coming from uart: {data}, {type(data)}")
+                    self.get_logger().info(
+                        f"Data coming from uart: {data}, {type(data)}"
+                    )
 
                 if data != "1;42;42" and data != "2;42;42":
                     self.get_logger().error("Wrong data coming from uart")

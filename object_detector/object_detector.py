@@ -6,7 +6,7 @@ import rclpy
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import UInt16MultiArray
+from std_msgs.msg import Int16MultiArray
 from visualization_msgs.msg import Marker, MarkerArray
 
 
@@ -53,7 +53,7 @@ class ObjectDetector(Node):
         self.marker_pub = self.create_publisher(MarkerArray, "/detected_objects", 10)
 
         # Create a publisher for UART sender
-        self.uart_data_pub = self.create_publisher(UInt16MultiArray, "/uart_data", 10)
+        self.uart_data_pub = self.create_publisher(Int16MultiArray, "/uart_data", 10)
 
         self.get_logger().info("object Detector started!")
         self.get_logger().info(
@@ -127,7 +127,7 @@ class ObjectDetector(Node):
                     )
 
                 # If an object is detected we send the distance and angle of the cluster to the UART sender
-                msg = UInt16MultiArray()
+                msg = Int16MultiArray()
 
                 # Distance is formatted to be an int that represent millimeter
                 # Angle is formatted to be an int that represent a degree in [-angle + (self.front_angle if self.normalization else 0); angle + (self.front_angle if self.normalization else 0)] range
