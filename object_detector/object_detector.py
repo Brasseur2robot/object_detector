@@ -4,6 +4,7 @@ import math
 
 import rclpy
 from geometry_msgs.msg import Point
+from led_ring import detectionBlink, initStrip, matchSonar, startupBlink
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import Int16MultiArray
@@ -30,6 +31,7 @@ class ObjectDetector(Node):
         self.declare_parameter(
             "normalization", False
         )  # Set to True to get a [0°; 2*front_angle°] scan range
+        self.declare_parameter("led_ring", False)  # To enable led_ring output
         self.declare_parameter("debug", False)
 
         self.front_angle = self.get_parameter("front_angle_range").value
@@ -39,6 +41,7 @@ class ObjectDetector(Node):
         self.expected_width = self.get_parameter("expected_object_width").value
         self.width_tol = self.get_parameter("width_tolerance").value
         self.normalization = self.get_parameter("normalization").value
+        self.led_ring = self.get_parameter("led_ring").value
         self.debug = self.get_parameter("debug").value
 
         # Subscribe to lidar scan from ldlidar_stl_ros2 package
@@ -60,12 +63,19 @@ class ObjectDetector(Node):
             f"Looking for object {self.expected_width}m wide in front in a [{-self.front_angle + (self.front_angle if self.normalization else 0)};{self.front_angle + (self.front_angle if self.normalization else 0)}]° range"
         )
 
+        if self.led_ring:
+            initStrip()
+            startupBlink()
+
     def scan_callback(self, msg: LaserScan):
         """Core of the program. Publish the marker_array of detected object and the data for the uart interface
 
         Args:
             msg: incoming data from the lidar
         """
+
+        if self.led_ring:
+            matchSonar(True)
 
         # Get frame_id from laser scan for proper visualization
         self.frame_id = msg.header.frame_id
@@ -126,6 +136,10 @@ class ObjectDetector(Node):
                         f"Width: {width:.2f}m, Angle: {angle + (self.front_angle if self.normalization else 0):.1f}°"
                     )
 
+                if self.led_ring:
+                    matchSonar(False)
+                    detectionBlink()
+
                 # If an object is detected we send the distance and angle of the cluster to the UART sender
                 msg = Int16MultiArray()
 
@@ -144,6 +158,8 @@ class ObjectDetector(Node):
 
         # Publish markers
         self.marker_pub.publish(marker_array)
+
+        matchSonar(True)
 
     def create_cluster_marker(self, cluster, marker_id, is_object):
         """Create a visual marker for a cluster"""

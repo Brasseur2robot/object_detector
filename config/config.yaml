@@ -7,6 +7,7 @@ object_detector:
     expected_object_width: 0.1
     width_tolerance: 0.05
     normalization: False
+    led_ring: False
     debug: True
 
 uart_sender:
